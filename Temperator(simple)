@@ -1,0 +1,43 @@
+// 라이브러리 추가
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+// 아두이노 포트2번 데이타 버스 연결
+#define ONE_WIRE_BUS 2
+
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors(&oneWire);
+
+void setup(void)
+{
+
+  Serial.begin(9600);
+  Serial.println("온도 측정 데모");
+
+  sensors.begin();
+}
+
+void loop(void)
+{ 
+
+  Serial.print("Requesting temperatures...");
+  sensors.requestTemperatures(); // 온도값 읽어오기
+  Serial.println("DONE");
+  // After we got the temperatures, we can print them here.
+  // We use the function ByIndex, and as an example get the temperature from the first sensor only.
+  
+  float tempC = sensors.getTempCByIndex(0);
+
+  if(tempC != DEVICE_DISCONNECTED_C) 
+  {
+    Serial.print("Temperature: ");
+    Serial.println(tempC);
+  } 
+  else
+  {
+    Serial.println("Error: Could not read temperature data"); //온도값 읽어오기 실패
+  }
+}
