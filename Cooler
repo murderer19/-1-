@@ -4,7 +4,7 @@ AF_DCMotor motor(1);
 
 void setup() {
  Serial.begin(9600);    
- Serial.println("Motor party!");
+ Serial.println("Start Cooler!\n");
  motor.setSpeed(200);
  motor.run(RELEASE);
 }
