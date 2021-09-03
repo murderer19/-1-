@@ -1,0 +1,35 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+int a=1;
+void setup()
+{
+// initialize the LCD
+lcd.begin();
+
+```
+// Turn on the blacklight and print a message.
+lcd.backlight();
+lcd.print(a);
+
+```
+
+}
+
+void loop()
+{
+// Do nothing here...
+}
+
+>>날짜/시간/온도/pH변수 설정하기
+
+lcd.clear();
+lcd.print("온도:");
+lcd.setCursor(3,0);
+lcd.print(TempVal);
+lcd.setCursor(8,0);
+lcd.print("Ph:");
+lcd.setCursor(11,0);
+lcd.print(PhVal);
