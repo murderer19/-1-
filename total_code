@@ -1,0 +1,169 @@
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include <Servo.h>
+#include <Stepper.h>
+#include <SoftwareSerial.h>
+#include <LiquidCrystal_I2C.h>
+
+#define BT_RXD     //블루투스 핀 연결
+#define BT_TXD 
+SoftwareSerial bluetooth(BT_RXD, BT_TXD);
+
+
+
+#define TempSensor_pin   // 온도센서 핀연결
+OneWire oneWire(TempSensor_pin);
+DallasTemperature TS (&oneWire);
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); //Lcd 
+
+#define Phsensor_pin  // PH센서 핀 연결
+
+#define FeedSM_pin1   // 먹이 급여 스텝모터 핀 연결
+#define FeedSM_pin2  
+#define FeedSM_pin3  
+#define FeedSM_pin4  
+Stepper step1(2048, FeedSM_pin1, FeedSM_pin2, FeedSM_pin3, FeedSM_pin4);
+int lap = 2048; //2048-->360도 회전
+
+#define Cooler_pin1   // 쿨링팬 핀 연결
+#define Cooler_pin2  
+
+#define Pump_pin1   // 펌프 핀 연결
+#define Pump_pin2 
+
+
+float TempVal; //센서값 저장 변수
+float PhVal;
+float setTempVal; //설정값 저장 변수
+float setPhVal;
+
+int DoFeed=0;  // 기기 동작 변수
+int DoCooler=0;
+int DoPump=0;
+
+void setup() {
+  Serial.begin(9600);  //시리얼 포트 초기화
+  bluetooth.begin(9600); //블루투스 포트 초기화
+
+  lcd.begin(); // lcd 초기화
+  lcd.backlight();
+
+  TempSensor.begin(); //온도센서 버스 초기화
+
+  step1.setSpeed(10); // 스텝모터 회전 속도 설정 (분당 10회)
+
+  pinMode(Cooler_pin1,OUTPUT);  // 쿨링팬 핀 출력 설정
+  pinMode(Cooler_pin2,OUTPUT);
+
+  pinMode(Pump_pin1,OUTPUT);  // 펌프 핀 출력 설정
+  pinMode(Pump_pin2,OUTPUT);  
+
+}
+
+void loop() {
+
+  receiveTemp(); //블루투스로 온도 값 받아오기
+  receivePh();   //블루투스로 Ph 값 받아오기 
+  TempSensor();  //온도센서 측정값 저장
+  PhSensor(); //Ph센서 측정값 저장
+  LcdPrint(); //Lcd 출력
+  SendTemp(); //온도값 전송
+  SendPh();   //Ph값 전송
+  Compare(); // 값 비교
+  Cooler(); //쿨러 작동
+  Pump();  //펌프 작동
+  StepMotor(); //먹이 급여기 작동 
+  delay(100);
+}
+
+
+
+
+void TempSensor(){  //온도센서 측정값 저장
+  TS.requestTemperatures(); 
+  TempVal= TS.getTempCByIndex(0);
+} 
+
+void PhSensor(){  //Ph센서 측정값 저장
+  PhVal=analogRead(Phsensor_pin;)*5.0*3.5/1024;
+} 
+
+void LcdPrint(){ //Lcd 출력
+  lcd.clear();
+  lcd.print("온도:");
+  lcd.setCursor(3,0);
+  lcd.print(TempVal);
+  lcd.setCursor(8,0);
+  lcd.print("Ph:");
+  lcd.setCursor(11,0);
+  lcd.print(PhVal);
+}
+
+void SendTemp(){ //온도값 전송
+   if(Serial.available()){
+  bluetooth.write(TempVal);
+ }
+}
+
+void SendPh(){ //Ph값 전송
+  if(Serial.available()){
+  bluetooth.write(PhVal);
+ }
+}
+
+void receiveTemp(){  //블루투스로 온도 값 받아오기
+   if(bluetooth.available()){     
+  setTempVal=bluetooth.read();
+ } 
+}
+
+void receivePh(){ //블루투스로 Ph 값 받아오기 
+   if(bluetooth.available()){      
+  setPhVal=bluetooth.read();
+ }
+}
+
+void Compare() { // 값 비교
+  
+  if (setTempVal>=TempVal)  //온도값 비교
+    DoCooler=0;
+  else
+    DoCooler=1;
+
+  if (setPhVal<=PhVal)  //PH값 비교
+    DoPump=0;
+  else
+    DoPump=1;
+    
+}
+void StepMotor(){ //먹이 급여기 작동
+  if (DoFeed){             //전달 값이 1이면 오른쪽으로 한바퀴 회전
+    step1.step(lap); 
+  }
+}
+
+void Cooler(){    //쿨러 작동
+  if (DoCooler){
+    digitalWrite(Cooler_pin1,HIGH);
+    digitalWrite(Cooler_pin2,HIGH);
+  }
+  else{
+    digitalWrite(Cooler_pin1,LOW);
+    digitalWrite(Cooler_pin2,LOW);
+  }
+  
+}
+
+void Pump(){      //펌프 작동
+  
+  if (DoPump){
+    analogWrite(Pump_pin1, 255);
+    analogWrite(Pump_pin2, 255);
+  }
+  else{
+    analogWrite(Pump_pin1, 0);
+    analogWrite(Pump_pin2, 0);
+  }
+
+} 
